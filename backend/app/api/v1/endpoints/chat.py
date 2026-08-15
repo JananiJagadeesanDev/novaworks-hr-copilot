@@ -19,6 +19,11 @@ from app.db.session import get_db
 from app.models.employee import Employee
 from app.services.ai.policy_rag import policy_rag_service
 from app.services.ai.sql_agent import sql_agent_service
+from app.services.ai.action_agent import action_agent_service
+from app.services.ai.router_agent import router_agent_service, AgentName
+from app.services.audit import audit_service
+from app.models.ai_audit_log import AgentType
+from app.api.v1.deps import bearer_scheme
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +75,41 @@ class SQLChatResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Action Agent Schemas
+# ---------------------------------------------------------------------------
+
+class ActionChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, description="Natural language command for Action Agent")
+    access_token: Optional[str] = Field(None, description="Raw access token, if available")
+
+
+class ActionChatData(BaseModel):
+    answer: str
+    action_taken: str
+    tool_called: str
+    tool_result: dict[str, Any]
+
+
+class ActionChatResponse(BaseModel):
+    success: bool = True
+    data: ActionChatData
+    error: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Main Router Schemas
+# ---------------------------------------------------------------------------
+
+class MainChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, description="User's message for the main router")
+
+
+class MainChatResponse(BaseModel):
+    agent: str
+    response: dict[str, Any]
+
+
+# ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 
@@ -96,7 +136,7 @@ async def chat_policy(
 
     try:
         rag_result = await policy_rag_service.ask(question=question, db=db)
-        return PolicyChatResponse(
+        response = PolicyChatResponse(
             success=True,
             data=PolicyChatData(
                 answer=rag_result["answer"],
@@ -107,6 +147,15 @@ async def chat_policy(
             ),
             error=None,
         )
+        audit_service.log_interaction(
+            db=db,
+            employee_id=current_user.id,
+            agent_type=AgentType.POLICY_RAG,
+            query=question,
+            response=rag_result["answer"],
+            metadata={"sources": rag_result.get("sources", [])},
+        )
+        return response
     except Exception as exc:
         logger.error("Policy chat failed for user %s: %s", current_user.employee_id, exc, exc_info=True)
         return PolicyChatResponse(
@@ -146,7 +195,7 @@ async def chat_sql(
             current_user=current_user,
             db=db,
         )
-        return SQLChatResponse(
+        response = SQLChatResponse(
             success=True,
             data=SQLChatData(
                 answer=sql_result["answer"],
@@ -155,6 +204,15 @@ async def chat_sql(
             ),
             error=None,
         )
+        audit_service.log_interaction(
+            db=db,
+            employee_id=current_user.id,
+            agent_type=AgentType.SQL_AGENT,
+            query=question,
+            response=sql_result["answer"],
+            metadata={"sql": sql_result.get("sql", ""), "rows": sql_result.get("rows", [])},
+        )
+        return response
     except Exception as exc:
         logger.error("SQL chat failed for user %s: %s", current_user.employee_id, exc, exc_info=True)
         return SQLChatResponse(
@@ -166,3 +224,118 @@ async def chat_sql(
             ),
             error=str(exc),
         )
+
+
+@router.post("/actions", response_model=ActionChatResponse)
+async def chat_actions(
+    payload: ActionChatRequest,
+    current_user: Employee = Depends(get_current_user),
+    credentials: str = Depends(bearer_scheme),
+):
+    """Perform HR tasks using natural language via guarded, tool-calling LLM."""
+    message = payload.message.strip()
+    if not message:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Message cannot be blank",
+        )
+
+    logger.info(
+        "Action chat request from employee %s (%s): %r",
+        current_user.employee_id,
+        current_user.role.value,
+        message,
+    )
+
+    try:
+        # The service needs the raw token to make authenticated API calls on the user's behalf
+        access_token = credentials.credentials
+        action_result = await action_agent_service.run(
+            message=message,
+            current_user=current_user,
+            access_token=access_token,
+        )
+
+        success = "FAILED" not in action_result.get("action_taken", "") and action_result.get("action_taken") != "DENIED"
+
+        response = ActionChatResponse(
+            success=success,
+            data=ActionChatData(**action_result),
+            error=action_result.get("tool_result", {}).get("error") if not success else None,
+        )
+        audit_service.log_interaction(
+            db=db,
+            employee_id=current_user.id,
+            agent_type=AgentType.HR_ACTION,
+            query=message,
+            response=action_result["answer"],
+            action_taken=action_result.get("action_taken"),
+            metadata={
+                "tool_called": action_result.get("tool_called"),
+                "tool_params": action_result.get("parameters"),
+            },
+        )
+        return response
+    except Exception as exc:
+        logger.error("Action chat failed for user %s: %s", current_user.employee_id, exc, exc_info=True)
+        return ActionChatResponse(
+            success=False,
+            data=ActionChatData(
+                answer="An error occurred while performing the action. Please try again later.",
+                action_taken="ERROR",
+                tool_called="none",
+                tool_result={"error": str(exc)},
+            ),
+            error=str(exc),
+        )
+
+
+@router.post("/router", response_model=MainChatResponse)
+async def chat_router(
+    payload: MainChatRequest,
+    current_user: Employee = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    credentials: str = Depends(bearer_scheme),
+):
+    """Main entry point for the AI copilot. Classifies intent and routes to the correct agent."""
+    message = payload.message.strip()
+    if not message:
+        raise HTTPException(status_code=422, detail="Message cannot be blank")
+
+    # 1. Classify intent
+    agent_name = await router_agent_service.classify(message)
+
+    # 2. Delegate to the appropriate agent
+    response_data: dict[str, Any]
+
+    if agent_name == "policy_rag":
+        response_data = await policy_rag_service.ask(question=message, db=db)
+    elif agent_name == "sql_agent":
+        response_data = await sql_agent_service.ask(question=message, current_user=current_user, db=db)
+    elif agent_name == "action_agent":
+        access_token = credentials.credentials
+        response_data = await action_agent_service.run(message=message, current_user=current_user, access_token=access_token)
+    else:  # "none"
+        response_data = {"answer": "I'm sorry, I'm not sure how to handle that request. Please try rephrasing or ask me about HR policies, data, or actions."}
+
+    # 3. Log the interaction
+    # The agent name from the router needs to be cast to the AgentType enum
+    agent_type_map: dict[AgentName, AgentType] = {
+        "policy_rag": AgentType.POLICY_RAG,
+        "sql_agent": AgentType.SQL_AGENT,
+        "action_agent": AgentType.HR_ACTION,
+        "none": AgentType.ROUTER, # Log 'none' classifications under the router itself
+    }
+    agent_type = agent_type_map.get(agent_name, AgentType.ROUTER)
+
+    audit_service.log_interaction(
+        db=db,
+        employee_id=current_user.id,
+        agent_type=agent_type,
+        query=message,
+        response=response_data.get("answer"),
+        action_taken=response_data.get("action_taken"),
+        metadata=response_data,
+    )
+
+    return MainChatResponse(agent=agent_name, response=response_data)

@@ -96,3 +96,12 @@ REPLACE, TRUNCATE, PRAGMA, ATTACH, DETACH
 - [ ] Database models (`backend/app/models/`)
 - [ ] Database session setup (`backend/app/db/`)
 - [ ] Alembic migrations (`backend/alembic/`)
+##How we will approach this:
+I will guide you through each step, one at a time. I will provide the exact commands to run and explain what each one does.
+
+Install Docker Desktop: First, you will need to install Docker on your machine. It's a standard application with a straightforward installer.
+Create a Dockerfile: I will write a file named Dockerfile for you. This is the recipe that tells Docker how to build the image for your FastAPI application.
+Build and Test Locally: We will use Docker to build the image and run it on your machine to confirm it works.
+Configure AWS CLI: We will set up the AWS Command Line Interface (CLI) so you can interact with your AWS account from your terminal.
+Step-by-Step AWS Deployment: We will then proceed through Steps 20-30, creating the necessary AWS resources and deploying the application.
+Are you ready to start with the first step: installing Docker Desktop?
