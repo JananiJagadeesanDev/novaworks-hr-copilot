@@ -7,6 +7,8 @@ from app.models.project import Project, EmployeeProject, ProjectStatus
 from app.models.skill import Skill, EmployeeSkill, ProficiencyLevel
 from app.models.announcement import Announcement
 from app.models.ai_audit_log import AIAuditLog, AgentType
+from app.models.job_history import JobHistory
+from app.models.onboarding_task import OnboardingTask, OnboardingTaskStatus
 
 __all__ = [
     "Employee", "UserRole",
@@ -18,4 +20,6 @@ __all__ = [
     "Skill", "EmployeeSkill", "ProficiencyLevel",
     "Announcement",
     "AIAuditLog", "AgentType",
+    "JobHistory",
+    "OnboardingTask", "OnboardingTaskStatus",
 ]

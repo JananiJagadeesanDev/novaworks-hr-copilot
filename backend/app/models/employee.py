@@ -67,3 +67,9 @@ class Employee(Base):
     audit_logs: Mapped[list["AIAuditLog"]] = relationship(  # type: ignore[name-defined]
         "AIAuditLog", back_populates="employee"
     )
+    job_histories: Mapped[list["JobHistory"]] = relationship(  # type: ignore[name-defined]
+        "JobHistory", back_populates="employee"
+    )
+    onboarding_tasks: Mapped[list["OnboardingTask"]] = relationship(  # type: ignore[name-defined]
+        "OnboardingTask", foreign_keys="OnboardingTask.employee_id", back_populates="employee"
+    )

@@ -16,7 +16,9 @@ from app.models.announcement import Announcement
 from app.models.department import Department
 from app.models.employee import Employee, UserRole
 from app.models.hr_policy import HRPolicy
+from app.models.job_history import JobHistory
 from app.models.leave import LeaveBalance, LeaveType
+from app.models.onboarding_task import OnboardingTask, OnboardingTaskStatus
 from app.models.project import EmployeeProject, Project, ProjectStatus
 from app.models.skill import EmployeeSkill, ProficiencyLevel, Skill
 from app.models.ticket import Ticket, TicketPriority, TicketStatus
@@ -354,15 +356,166 @@ def seed(db: Session) -> None:
     ])
     db.flush()
 
+    # ------------------------------------------------------------------
+    # Job History
+    # ------------------------------------------------------------------
+    db.add_all([
+        JobHistory(
+            employee_id=admin.id,
+            department_id=dept_hr.id,
+            job_title="IT Support Specialist",
+            start_date=date(2019, 6, 1),
+            end_date=date(2021, 6, 1),
+            location="Bengaluru",
+            change_reason="NEW_HIRE",
+        ),
+        JobHistory(
+            employee_id=admin.id,
+            department_id=dept_hr.id,
+            job_title="System Administrator",
+            start_date=date(2021, 6, 1),
+            end_date=None,
+            location="Bengaluru",
+            change_reason="PROMOTION",
+        ),
+        JobHistory(
+            employee_id=hr_manager.id,
+            department_id=dept_hr.id,
+            job_title="HR Specialist",
+            start_date=date(2020, 3, 15),
+            end_date=date(2022, 4, 1),
+            location="Bengaluru",
+            change_reason="NEW_HIRE",
+        ),
+        JobHistory(
+            employee_id=hr_manager.id,
+            department_id=dept_hr.id,
+            job_title="HR Manager",
+            start_date=date(2022, 4, 1),
+            end_date=None,
+            location="Bengaluru",
+            change_reason="PROMOTION",
+        ),
+        JobHistory(
+            employee_id=eng_manager.id,
+            department_id=dept_eng.id,
+            job_title="Senior Software Engineer",
+            start_date=date(2020, 1, 10),
+            end_date=date(2022, 1, 15),
+            location="Bengaluru",
+            change_reason="NEW_HIRE",
+        ),
+        JobHistory(
+            employee_id=eng_manager.id,
+            department_id=dept_eng.id,
+            job_title="Engineering Manager",
+            start_date=date(2022, 1, 15),
+            end_date=None,
+            location="Bengaluru",
+            change_reason="PROMOTION",
+        ),
+        JobHistory(
+            employee_id=emp_raj.id,
+            department_id=dept_eng.id,
+            job_title="Junior Software Engineer",
+            start_date=date(2021, 7, 19),
+            end_date=date(2023, 1, 1),
+            location="Bengaluru",
+            change_reason="NEW_HIRE",
+        ),
+        JobHistory(
+            employee_id=emp_raj.id,
+            department_id=dept_eng.id,
+            job_title="Software Engineer",
+            start_date=date(2023, 1, 1),
+            end_date=None,
+            location="Bengaluru",
+            change_reason="PROMOTION",
+        ),
+        JobHistory(
+            employee_id=emp_sara.id,
+            department_id=dept_eng.id,
+            job_title="Frontend Developer",
+            start_date=date(2022, 2, 7),
+            end_date=None,
+            location="Bengaluru",
+            change_reason="NEW_HIRE",
+        ),
+        JobHistory(
+            employee_id=emp_anil.id,
+            department_id=dept_fin.id,
+            job_title="Financial Analyst",
+            start_date=date(2021, 11, 1),
+            end_date=None,
+            location="Bengaluru",
+            change_reason="NEW_HIRE",
+        ),
+        JobHistory(
+            employee_id=emp_meena.id,
+            department_id=dept_mkt.id,
+            job_title="Marketing Specialist",
+            start_date=date(2023, 4, 3),
+            end_date=None,
+            location="Bengaluru",
+            change_reason="NEW_HIRE",
+        ),
+    ])
+    db.flush()
+
+    # ------------------------------------------------------------------
+    # Onboarding Tasks
+    # ------------------------------------------------------------------
+    db.add_all([
+        OnboardingTask(
+            employee_id=emp_meena.id,
+            title="Submit Identification & Tax Forms",
+            description="Upload government ID and tax documents to the employee portal.",
+            category="HR_PAPERWORK",
+            status=OnboardingTaskStatus.COMPLETED,
+            due_date=date(2023, 4, 10),
+            assigned_by=hr_manager.id,
+        ),
+        OnboardingTask(
+            employee_id=emp_meena.id,
+            title="Set up Workstation & Marketing Suite",
+            description="Configure laptop, password manager, Slack, and Hubspot access.",
+            category="IT_SETUP",
+            status=OnboardingTaskStatus.COMPLETED,
+            due_date=date(2023, 4, 7),
+            assigned_by=admin.id,
+        ),
+        OnboardingTask(
+            employee_id=emp_meena.id,
+            title="Complete Information Security & Privacy Training",
+            description="Complete the mandatory interactive course on data security and PII handling.",
+            category="TRAINING",
+            status=OnboardingTaskStatus.IN_PROGRESS,
+            due_date=date(2025, 7, 1),
+            assigned_by=hr_manager.id,
+        ),
+        OnboardingTask(
+            employee_id=emp_sara.id,
+            title="Complete Cloud Architecture Security Review",
+            description="Read and sign off on internal secure coding and cloud infrastructure standards.",
+            category="SECURITY",
+            status=OnboardingTaskStatus.PENDING,
+            due_date=date(2025, 8, 30),
+            assigned_by=eng_manager.id,
+        ),
+    ])
+    db.flush()
+
     db.commit()
     print("Seed complete.")
-    print(f"  Departments : 5")
-    print(f"  Employees   : 7  (admin / 2 managers / 4 staff)")
-    print(f"  HR Policies : {len(policies)}")
-    print(f"  Skills      : 7")
-    print(f"  Projects    : 2")
-    print(f"  Tickets     : 2")
-    print(f"  Announcements: 3")
+    print(f"  Departments     : 5")
+    print(f"  Employees       : 7  (admin / 2 managers / 4 staff)")
+    print(f"  HR Policies     : {len(policies)}")
+    print(f"  Skills          : 7")
+    print(f"  Projects        : 2")
+    print(f"  Tickets         : 2")
+    print(f"  Announcements   : 3")
+    print(f"  Job Histories   : 11")
+    print(f"  Onboarding Tasks: 4")
 
 
 if __name__ == "__main__":

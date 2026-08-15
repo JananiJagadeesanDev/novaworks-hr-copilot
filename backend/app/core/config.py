@@ -10,11 +10,18 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 60
 
-    LLM_PROVIDER: str = "dell_gateway"
+    LLM_PROVIDER: str = "google"
     ENVIRONMENT: str = "development"
 
-    OPENAI_API_KEY: str = ""
+    # Google AI Studio
+    GOOGLE_API_KEY: str = ""
+
+    # RAG / Vector store settings
+    EMBEDDING_MODEL: str = "models/gemini-embedding-2"
+    LLM_MODEL: str = "gemini-3.1-flash-lite"
+    QDRANT_PATH: str = "./qdrant_data"
+    POLICY_COLLECTION: str = "hr_policies"
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
-settings = Settings()
+settings = Settings()

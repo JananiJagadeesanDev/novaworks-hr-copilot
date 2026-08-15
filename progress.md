@@ -35,11 +35,11 @@
       → POST /api/v1/employees/{id}/projects
 - [ ] Step 7c: Missing DB models — job_history, onboarding_tasks
       (job_history referenced in SQL Agent recommended tables; onboarding_tasks in architecture diagram)
-- [ ] Step 8: Policy RAG module (ingestion → embeddings → vector_store → policy_rag.py)
-- [ ] Step 9: `/api/v1/chat/policy` endpoint
-- [ ] Step 10: SQL Agent module + guardrails (sql_agent.py + sql_guardrails.py)
-- [ ] Step 11: `/api/v1/chat/sql` endpoint
-- [ ] Step 12: HR Action Agent + api_tools.py + permissions.py
+- [x] Step 8: Policy RAG module (ingestion → embeddings → vector_store → policy_rag.py)
+- [x] Step 9: `/api/v1/chat/policy` endpoint
+- [x] Step 10: SQL Agent module + guardrails (sql_agent.py + sql_guardrails.py)
+- [x] Step 11: `/api/v1/chat/sql` endpoint
+- [x] Step 12: HR Action Agent + api_tools.py + permissions.py
 - [ ] Step 12b: `audit.py` service — standalone AI audit writer with secret/PAN/bank redaction
 - [ ] Step 13: `/api/v1/chat/actions` endpoint
 - [ ] Step 14: Router endpoint (`/api/v1/chat/router`)
