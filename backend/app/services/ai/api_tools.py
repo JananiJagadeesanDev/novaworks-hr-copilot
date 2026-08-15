@@ -10,7 +10,12 @@ by the FastAPI endpoint handlers.
 import logging
 from typing import Any, Optional
 import httpx
-from app.main import app
+
+
+def _get_app():
+    from app.main import app
+    return app
+
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +43,7 @@ async def apply_leave(
         "is_half_day": is_half_day,
         "half_day_period": half_day_period,
     }
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=_get_app()), base_url="http://test") as client:
         response = await client.post("/api/v1/leaves/requests", json=payload, headers=_get_headers(access_token))
         if response.is_success:
             return {"success": True, "status_code": response.status_code, "data": response.json()}
@@ -57,7 +62,7 @@ async def update_leave(
         "status": status.upper(),
         "approver_notes": approver_notes,
     }
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=_get_app()), base_url="http://test") as client:
         response = await client.patch(f"/api/v1/leaves/requests/{request_id}", json=payload, headers=_get_headers(access_token))
         if response.is_success:
             return {"success": True, "status_code": response.status_code, "data": response.json()}
@@ -66,7 +71,7 @@ async def update_leave(
 
 async def get_leave_balance(*, access_token: str) -> dict[str, Any]:
     """Call GET /api/v1/leaves/balance to fetch user's current leave balance."""
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=_get_app()), base_url="http://test") as client:
         response = await client.get("/api/v1/leaves/balance", headers=_get_headers(access_token))
         if response.is_success:
             return {"success": True, "status_code": response.status_code, "data": response.json()}
@@ -94,7 +99,7 @@ async def create_ticket(
         "category": category.lower(),
         "priority": clean_priority,
     }
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=_get_app()), base_url="http://test") as client:
         response = await client.post("/api/v1/tickets", json=payload, headers=_get_headers(access_token))
         if response.is_success:
             return {"success": True, "status_code": response.status_code, "data": response.json()}
@@ -121,7 +126,7 @@ async def update_ticket(
     if resolution:
         payload["resolution"] = resolution
 
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=_get_app()), base_url="http://test") as client:
         response = await client.patch(f"/api/v1/tickets/{ticket_id}", json=payload, headers=_get_headers(access_token))
         if response.is_success:
             return {"success": True, "status_code": response.status_code, "data": response.json()}
@@ -141,7 +146,7 @@ async def create_announcement(
         "content": content,
         "target_role": target_role.upper() if target_role else None,
     }
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=_get_app()), base_url="http://test") as client:
         response = await client.post("/api/v1/announcements", json=payload, headers=_get_headers(access_token))
         if response.is_success:
             return {"success": True, "status_code": response.status_code, "data": response.json()}
@@ -162,7 +167,7 @@ async def assign_project(
         "role": role,
         "joined_at": joined_at,
     }
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=_get_app()), base_url="http://test") as client:
         response = await client.post(
             f"/api/v1/employees/{employee_id}/projects",
             json=payload,

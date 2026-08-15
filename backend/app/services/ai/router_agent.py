@@ -108,7 +108,14 @@ class RouterAgentService:
             return agent_name  # type: ignore
 
         except Exception as exc:
-            logger.error("Router classification failed: %s", exc, exc_info=True)
+            logger.error("Router LLM classification failed (%s), using heuristic fallback", exc)
+            msg_lower = message.lower()
+            if any(k in msg_lower for k in ["policy", "sick leave", "work from home", "wfh", "late to work", "half-day", "rules", "guidelines"]):
+                return "policy_rag"
+            elif any(k in msg_lower for k in ["apply", "create a", "approve", "assign employee", "announcement", "ticket for"]):
+                return "action_agent"
+            elif any(k in msg_lower for k in ["projects", "employees", "assigned to", "show my", "find", "salary", "bank", "pan", "drop table", "delete from"]):
+                return "sql_agent"
             return "none"
 
 

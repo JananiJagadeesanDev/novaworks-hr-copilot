@@ -118,41 +118,47 @@ class ActionAgentService:
             temperature=0.0,
         )
 
-    def _extract_json(self, text_content: str) -> dict[str, Any]:
-        match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text_content)
-        raw = match.group(1) if match else text_content
-        try:
-            return json.loads(raw.strip())
-        except Exception:
-            return {"action": "none", "parameters": {}}
+        if self._llm is None:
+            self._llm = ChatGoogleGenerativeAI(
+                model=settings.LLM_MODEL,
+                google_api_key=settings.GOOGLE_API_KEY,
+                temperature=0.1,
+            )
+        return self._llm
 
-    async def extract_intent(self, user_message: str, current_user: Employee) -> dict[str, Any]:
-        """Extract tool name and arguments from user message."""
+    async def extract_intent(self, message: str, current_user: Employee) -> dict[str, Any]:
+        """Uses LLM to classify user intent and extract tool parameters."""
         today_str = date.today().isoformat()
-        sys_prompt = INTENT_EXTRACTION_PROMPT.replace("{today_date}", today_str)
-        user_prompt = (
-            f"User Context:\n"
-            f"- User ID: {current_user.id}\n"
-            f"- Name: {current_user.first_name} {current_user.last_name}\n"
-            f"- Role: {current_user.role.value}\n\n"
-            f"User Request: {user_message}"
-        )
+        prompt_content = INTENT_EXTRACTION_PROMPT.format(today_date=today_str)
+        user_context = f"Current User ID: {current_user.id}, Role: {current_user.role.value}, Email: {current_user.email}\nUser Message: {message}"
 
         llm = self._get_llm()
         messages = [
-            SystemMessage(content=sys_prompt),
-            HumanMessage(content=user_prompt),
+            SystemMessage(content=prompt_content),
+            HumanMessage(content=user_context),
         ]
-        response = await asyncio.to_thread(llm.invoke, messages)
-        return self._extract_json(response.content)
+
+        try:
+            response = await asyncio.to_thread(llm.invoke, messages)
+            text = response.content.strip()
+            match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
+            raw_json = match.group(1) if match else text
+            parsed = json.loads(raw_json.strip())
+            logger.info("Action intent extracted: %r", parsed)
+            return parsed
+        except Exception as exc:
+            logger.error("Failed to extract action intent: %s", exc, exc_info=True)
+            return {"action": "none", "parameters": {"message": "I could not parse your request as a valid HR action."}}
 
     async def execute_tool(self, action: str, params: dict[str, Any], access_token: str) -> dict[str, Any]:
-        """Dispatch tool call to api_tools."""
+        """Dispatches action execution to backend REST API via api_tools."""
+        logger.info("Executing API tool '%s' with parameters: %r", action, params)
+
         if action == "apply_leave":
             return await api_tools.apply_leave(
                 leave_type=params.get("leave_type", "ANNUAL"),
-                start_date=params.get("start_date", ""),
-                end_date=params.get("end_date", ""),
+                start_date=params.get("start_date", date.today().isoformat()),
+                end_date=params.get("end_date", date.today().isoformat()),
                 reason=params.get("reason"),
                 is_half_day=params.get("is_half_day", False),
                 half_day_period=params.get("half_day_period"),
@@ -161,7 +167,7 @@ class ActionAgentService:
         elif action == "update_leave":
             return await api_tools.update_leave(
                 request_id=int(params.get("request_id", 0)),
-                status=params.get("status", ""),
+                status=params.get("status", "APPROVED"),
                 approver_notes=params.get("approver_notes"),
                 access_token=access_token,
             )
@@ -169,8 +175,8 @@ class ActionAgentService:
             return await api_tools.get_leave_balance(access_token=access_token)
         elif action == "create_ticket":
             return await api_tools.create_ticket(
-                title=params.get("title", "Support Request"),
-                description=params.get("description", ""),
+                title=params.get("title", "HR/IT Request"),
+                description=params.get("description", "Created via NovaWorks Copilot"),
                 category=params.get("category", "general"),
                 priority=params.get("priority", "MEDIUM"),
                 access_token=access_token,
@@ -222,12 +228,28 @@ class ActionAgentService:
         message: str,
         current_user: Employee,
         access_token: str,
+        confirm: bool = False,
+        confirmation_id: Optional[str] = None,
     ) -> dict[str, Any]:
-        """Full pipeline: Intent -> Permission Check -> Tool Call -> Synthesis."""
-        # 1. Intent Extraction
-        intent = await self.extract_intent(message, current_user)
-        action = intent.get("action", "none").lower()
-        params = intent.get("parameters", {})
+        """Full pipeline: Intent -> HITL Check -> Permission Check -> Tool Call -> Synthesis."""
+        # Check if confirming a previously registered HITL action
+        if confirm and confirmation_id:
+            pending = hitl.validate_and_consume_confirmation(confirmation_id, current_user.id)
+            if not pending:
+                return {
+                    "answer": "The confirmation token is invalid or has expired. Please re-issue your action request.",
+                    "action_taken": "FAILED",
+                    "tool_called": "none",
+                    "tool_result": {"error": "Invalid or expired confirmation_id"},
+                }
+            action = pending["tool_name"]
+            params = pending["parameters"]
+            logger.info("Proceeding with confirmed HITL action '%s' for user %s", action, current_user.employee_id)
+        else:
+            # 1. Intent Extraction
+            intent = await self.extract_intent(message, current_user)
+            action = intent.get("action", "none").lower()
+            params = intent.get("parameters", {})
 
         if action == "none" or not action:
             return {
@@ -254,10 +276,24 @@ class ActionAgentService:
                 "tool_result": {"error": "Permission denied", "detail": denial_reason},
             }
 
-        # 3. Tool Execution via API
+        # 3. HITL High-Impact Action Check (if unconfirmed)
+        if not confirm and hitl.is_high_impact_action(action, params):
+            pending_info = hitl.register_pending_confirmation(current_user.id, action, params)
+            return {
+                "answer": pending_info["prompt"],
+                "action_taken": "CONFIRMATION_REQUIRED",
+                "tool_called": action,
+                "tool_result": {
+                    "requires_confirmation": True,
+                    "confirmation_id": pending_info["confirmation_id"],
+                    "parameters": params,
+                },
+            }
+
+        # 4. Tool Execution via API
         tool_result = await self.execute_tool(action, params, access_token)
 
-        # 4. Response Synthesis
+        # 5. Response Synthesis
         answer = await self.synthesize_response(message, action, tool_result)
 
         return {

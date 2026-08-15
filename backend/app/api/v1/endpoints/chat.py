@@ -11,6 +11,7 @@ Endpoints:
 import logging
 from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -21,6 +22,7 @@ from app.services.ai.policy_rag import policy_rag_service
 from app.services.ai.sql_agent import sql_agent_service
 from app.services.ai.action_agent import action_agent_service
 from app.services.ai.router_agent import router_agent_service, AgentName
+from app.services.ai.tracing import ai_tracer
 from app.services.audit import audit_service
 from app.models.ai_audit_log import AgentType
 from app.api.v1.deps import bearer_scheme
@@ -81,6 +83,8 @@ class SQLChatResponse(BaseModel):
 class ActionChatRequest(BaseModel):
     message: str = Field(..., min_length=1, description="Natural language command for Action Agent")
     access_token: Optional[str] = Field(None, description="Raw access token, if available")
+    confirm: bool = Field(False, description="Confirm high-impact action execution")
+    confirmation_id: Optional[str] = Field(None, description="Pending HITL confirmation ID")
 
 
 class ActionChatData(BaseModel):
@@ -135,7 +139,10 @@ async def chat_policy(
     )
 
     try:
-        rag_result = await policy_rag_service.ask(question=question, db=db)
+        async with ai_tracer.trace_span("policy_rag", current_user.id, current_user.role.value, question) as span:
+            rag_result = await policy_rag_service.ask(question=question, db=db)
+            span.finish(output_response=rag_result["answer"])
+
         response = PolicyChatResponse(
             success=True,
             data=PolicyChatData(
@@ -190,11 +197,14 @@ async def chat_sql(
     )
 
     try:
-        sql_result = await sql_agent_service.ask(
-            question=question,
-            current_user=current_user,
-            db=db,
-        )
+        async with ai_tracer.trace_span("sql_agent", current_user.id, current_user.role.value, question) as span:
+            sql_result = await sql_agent_service.ask(
+                question=question,
+                current_user=current_user,
+                db=db,
+            )
+            span.finish(output_response=sql_result["answer"], tool_called="sql_query", tool_params={"sql": sql_result.get("sql")})
+
         response = SQLChatResponse(
             success=True,
             data=SQLChatData(
@@ -230,6 +240,7 @@ async def chat_sql(
 async def chat_actions(
     payload: ActionChatRequest,
     current_user: Employee = Depends(get_current_user),
+    db: Session = Depends(get_db),
     credentials: str = Depends(bearer_scheme),
 ):
     """Perform HR tasks using natural language via guarded, tool-calling LLM."""
@@ -250,11 +261,19 @@ async def chat_actions(
     try:
         # The service needs the raw token to make authenticated API calls on the user's behalf
         access_token = credentials.credentials
-        action_result = await action_agent_service.run(
-            message=message,
-            current_user=current_user,
-            access_token=access_token,
-        )
+        async with ai_tracer.trace_span("action_agent", current_user.id, current_user.role.value, message) as span:
+            action_result = await action_agent_service.run(
+                message=message,
+                current_user=current_user,
+                access_token=access_token,
+                confirm=payload.confirm,
+                confirmation_id=payload.confirmation_id,
+            )
+            span.finish(
+                output_response=action_result["answer"],
+                tool_called=action_result.get("tool_called"),
+                status="SUCCESS" if "FAILED" not in action_result.get("action_taken", "") else "FAILED",
+            )
 
         success = "FAILED" not in action_result.get("action_taken", "") and action_result.get("action_taken") != "DENIED"
 
@@ -339,3 +358,54 @@ async def chat_router(
     )
 
     return MainChatResponse(agent=agent_name, response=response_data)
+
+
+@router.post("/stream")
+async def chat_stream(
+    payload: MainChatRequest,
+    current_user: Employee = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    credentials: str = Depends(bearer_scheme),
+):
+    """Stream AI interaction stages and response tokens using Server-Sent Events (SSE)."""
+    message = payload.message.strip()
+    if not message:
+        raise HTTPException(status_code=422, detail="Message cannot be blank")
+
+    async def event_generator():
+        import json
+        import asyncio
+
+        # Event 1: Intent Classification Stage
+        yield f"event: status\ndata: {json.dumps({'stage': 'intent_classification', 'message': 'Classifying query intent...'})}\n\n"
+        await asyncio.sleep(0.2)
+
+        agent_name = await router_agent_service.classify(message)
+        yield f"event: status\ndata: {json.dumps({'stage': 'routing', 'agent': agent_name, 'message': f'Routed to {agent_name}'})}\n\n"
+        await asyncio.sleep(0.2)
+
+        # Event 2: Execution Stage
+        yield f"event: status\ndata: {json.dumps({'stage': 'execution', 'message': 'Processing agent logic & guardrails...'})}\n\n"
+
+        access_token = credentials.credentials
+        if agent_name == "policy_rag":
+            response_data = await policy_rag_service.ask(question=message, db=db)
+        elif agent_name == "sql_agent":
+            response_data = await sql_agent_service.ask(question=message, current_user=current_user, db=db)
+        elif agent_name == "action_agent":
+            response_data = await action_agent_service.run(message=message, current_user=current_user, access_token=access_token)
+        else:
+            response_data = {"answer": "I'm sorry, I'm not sure how to handle that request."}
+
+        # Event 3: Token Streaming / Text Delta
+        answer = response_data.get("answer", "")
+        chunk_size = 30
+        for i in range(0, len(answer), chunk_size):
+            chunk = answer[i:i + chunk_size]
+            yield f"event: delta\ndata: {json.dumps({'content': chunk})}\n\n"
+            await asyncio.sleep(0.05)
+
+        # Event 4: Completion Event
+        yield f"event: done\ndata: {json.dumps({'agent': agent_name, 'success': True, 'data': response_data})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

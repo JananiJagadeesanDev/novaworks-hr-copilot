@@ -129,15 +129,16 @@ class PolicyRAGService:
             )
             return self._no_context_response()
 
-        # Build context string and deduplicate sources
+        # Build context string with prompt injection defense tags and sanitization
         context_parts: list[str] = []
         seen_sources: set[tuple] = set()
         sources: list[dict] = []
 
         for doc, score in relevant:
             meta = doc.metadata
+            content = self._sanitize_chunk_content(doc.page_content)
             context_parts.append(
-                f"[{meta.get('title', 'Policy')}]\n{doc.page_content}"
+                f"<untrusted_policy_document_data title=\"{meta.get('title', 'Policy')}\">\n{content}\n</untrusted_policy_document_data>"
             )
             key = (meta.get("title", ""), meta.get("category", ""))
             if key not in seen_sources:
@@ -146,7 +147,7 @@ class PolicyRAGService:
                     {"title": meta.get("title", ""), "category": meta.get("category", "")}
                 )
 
-        context = "\n\n---\n\n".join(context_parts)
+        context = "\n\n".join(context_parts)
         filled_system = SYSTEM_PROMPT.format(context=context)
 
         # Call Gemini with system prompt + user question
@@ -191,6 +192,23 @@ class PolicyRAGService:
                 logger.info("Policy index not found — building on first request ...")
                 build_policy_index(db)
             self._index_built = True
+
+    @staticmethod
+    def _sanitize_chunk_content(text: str) -> str:
+        """Sanitize document chunk against embedded prompt injections."""
+        import re
+        patterns = [
+            r"ignore\s+(all\s+)?previous\s+instructions",
+            r"system\s+override",
+            r"you\s+are\s+now",
+            r"new\s+instruction:",
+            r"reveal\s+all\s+salaries",
+            r"reveal\s+passwords",
+        ]
+        sanitized = text
+        for p in patterns:
+            sanitized = re.sub(p, "[REDACTED_INSTRUCTION]", sanitized, flags=re.IGNORECASE)
+        return sanitized
 
     @staticmethod
     def _no_context_response() -> dict:

@@ -40,21 +40,21 @@
 - [x] Step 10: SQL Agent module + guardrails (sql_agent.py + sql_guardrails.py)
 - [x] Step 11: `/api/v1/chat/sql` endpoint
 - [x] Step 12: HR Action Agent + api_tools.py + permissions.py
-- [ ] Step 12b: `audit.py` service — standalone AI audit writer with secret/PAN/bank redaction
-- [ ] Step 13: `/api/v1/chat/actions` endpoint
-- [ ] Step 14: Router endpoint (`/api/v1/chat/router`)
-- [ ] Step 15: Wire audit logging into all three chat endpoints
+- [x] Step 12b: `audit.py` service — standalone AI audit writer with secret/PAN/bank redaction
+- [x] Step 13: `/api/v1/chat/actions` endpoint
+- [x] Step 14: Router endpoint (`/api/v1/chat/router`)
+- [x] Step 15: Wire audit logging into all three chat endpoints
 - [ ] Step 16: Frontend (`/ai-copilot` page + components) — deferred until backend works
-- [ ] Step 17: Documentation (`ai_architecture.md`, `ai_permissions_matrix.md`, `ai_eval_results.md`, README)
-- [ ] Step 18: Evaluation dataset + run against built system
+- [x] Step 17: Documentation (`ai_architecture.md`, `ai_permissions_matrix.md`, `ai_eval_results.md`, README)
+- [x] Step 18: Evaluation dataset + run against built system
 
 ## Bonus Steps (in scope)
-- [ ] Bonus A: Human-in-the-Loop confirmation for high-impact actions
+- [x] Bonus A: Human-in-the-Loop confirmation for high-impact actions
       (approve leave, reject leave, assign to project, create announcement, deactivate employee)
-- [ ] Bonus B: LangSmith / OpenTelemetry tracing for AI workflows
+- [x] Bonus B: LangSmith / OpenTelemetry tracing for AI workflows
       (prompt inputs, model outputs, tool calls, latency, token usage, permission failures)
-- [ ] Bonus C: Prompt injection defense — tests for malicious content inside policy documents
-- [ ] Bonus D: Streaming chat responses (SSE or WebSockets) for better UX
+- [x] Bonus C: Prompt injection defense — tests for malicious content inside policy documents
+- [x] Bonus D: Streaming chat responses (SSE or WebSockets) for better UX
 ## AWS Deployment Steps
 
 - [ ] Step 19: Dockerise the backend (Dockerfile + .dockerignore)
