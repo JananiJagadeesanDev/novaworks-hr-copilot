@@ -1,7 +1,16 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Configure Python logging *before* any app modules create loggers.
+# Uvicorn's own loggers are left untouched (its LOGGING_CONFIG does not touch root).
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    force=True,
+)
 
 from app.api.v1.router import api_router
 from app.core.config import settings

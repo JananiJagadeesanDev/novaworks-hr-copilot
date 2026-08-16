@@ -69,11 +69,23 @@ class RouterAgentService:
     is as deterministic as possible.
     """
 
+    def _heuristic_classify(self, message: str) -> AgentName:
+        """Keyword-based fallback when the LLM router is unavailable."""
+        msg_lower = message.lower()
+        if any(k in msg_lower for k in ["policy", "sick leave", "work from home", "wfh", "late to work", "half-day", "rules", "guidelines"]):
+            return "policy_rag"
+        elif any(k in msg_lower for k in ["apply", "create a", "approve", "assign employee", "announcement", "ticket for"]):
+            return "action_agent"
+        elif any(k in msg_lower for k in ["projects", "employees", "assigned to", "show my", "find", "salary", "bank", "pan", "drop table", "delete from"]):
+            return "sql_agent"
+        return "none"
+
     def _get_llm(self) -> ChatGoogleGenerativeAI:
         return ChatGoogleGenerativeAI(
             model=settings.LLM_MODEL,
             google_api_key=settings.GOOGLE_API_KEY,
             temperature=0.0,  # Deterministic output for classification
+            timeout=10,
         )
 
     def _extract_json(self, text_content: str) -> dict[str, str]:
@@ -88,6 +100,10 @@ class RouterAgentService:
 
     async def classify(self, message: str) -> AgentName:
         """Classifies the user message and returns the name of the appropriate agent."""
+        if not settings.GOOGLE_API_KEY:
+            logger.error("GOOGLE_API_KEY is not configured; using heuristic routing fallback.")
+            return self._heuristic_classify(message)
+
         llm = self._get_llm()
         messages = [
             SystemMessage(content=ROUTER_SYSTEM_PROMPT),
@@ -95,7 +111,10 @@ class RouterAgentService:
         ]
 
         try:
-            response = await asyncio.to_thread(llm.invoke, messages)
+            response = await asyncio.wait_for(
+                asyncio.to_thread(llm.invoke, messages),
+                timeout=15,
+            )
             result_json = self._extract_json(response.content)
             agent_name = result_json.get("agent", "none")
 
@@ -107,16 +126,12 @@ class RouterAgentService:
             logger.info("Router classified message %r to agent: %s", message, agent_name)
             return agent_name  # type: ignore
 
+        except asyncio.TimeoutError:
+            logger.error("Router LLM classification timed out; using heuristic fallback.")
+            return self._heuristic_classify(message)
         except Exception as exc:
             logger.error("Router LLM classification failed (%s), using heuristic fallback", exc)
-            msg_lower = message.lower()
-            if any(k in msg_lower for k in ["policy", "sick leave", "work from home", "wfh", "late to work", "half-day", "rules", "guidelines"]):
-                return "policy_rag"
-            elif any(k in msg_lower for k in ["apply", "create a", "approve", "assign employee", "announcement", "ticket for"]):
-                return "action_agent"
-            elif any(k in msg_lower for k in ["projects", "employees", "assigned to", "show my", "find", "salary", "bank", "pan", "drop table", "delete from"]):
-                return "sql_agent"
-            return "none"
+            return self._heuristic_classify(message)
 
 
 # Module-level singleton
