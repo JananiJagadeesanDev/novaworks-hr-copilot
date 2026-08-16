@@ -1,0 +1,116 @@
+.recent-actions {
+  width: 280px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--clr-border);
+  display: flex;
+  flex-direction: column;
+  background: hsla(230, 22%, 9%, 0.5);
+  overflow: hidden;
+}
+
+.recent-actions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--clr-border);
+  flex-shrink: 0;
+}
+
+.recent-actions-header h3 {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--clr-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.recent-actions-refresh {
+  font-size: 1.1rem;
+  color: var(--clr-text-muted);
+  padding: 4px 8px;
+  line-height: 1;
+}
+.recent-actions-refresh:hover { color: var(--clr-primary); }
+
+.recent-actions-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recent-actions-loading,
+.recent-actions-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 16px;
+  color: var(--clr-text-muted);
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.recent-actions-loading {
+  flex-direction: row;
+  justify-content: center;
+}
+
+.recent-actions-empty span {
+  font-size: 2rem;
+  opacity: 0.4;
+}
+
+.recent-actions-empty p {
+  line-height: 1.5;
+}
+
+/* ---- Action item ----------------------------------------- */
+.action-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.action-item:hover {
+  background: hsla(230, 20%, 16%, 0.7);
+  border-color: var(--clr-border);
+}
+
+.action-icon {
+  font-size: 1.2rem;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.action-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.action-text {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--clr-text-primary);
+  margin-bottom: 3px;
+  word-break: break-word;
+}
+
+.action-query {
+  font-size: 0.75rem;
+  color: var(--clr-text-muted);
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.action-time {
+  font-size: 0.7rem;
+  color: var(--clr-text-muted);
+}

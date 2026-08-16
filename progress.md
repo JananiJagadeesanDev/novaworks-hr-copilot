@@ -44,7 +44,7 @@
 - [x] Step 13: `/api/v1/chat/actions` endpoint
 - [x] Step 14: Router endpoint (`/api/v1/chat/router`)
 - [x] Step 15: Wire audit logging into all three chat endpoints
-- [ ] Step 16: Frontend (`/ai-copilot` page + components) — deferred until backend works
+- [x] Step 16: Frontend (`/ai-copilot` page + components) — Vite + React, dark glassmorphism, SSE streaming, HITL modal, agent badges, Recent Actions sidebar
 - [x] Step 17: Documentation (`ai_architecture.md`, `ai_permissions_matrix.md`, `ai_eval_results.md`, README)
 - [x] Step 18: Evaluation dataset + run against built system
 

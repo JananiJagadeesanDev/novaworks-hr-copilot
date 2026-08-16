@@ -1,0 +1,227 @@
+.chat-window {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ---- Empty state ----------------------------------------- */
+.chat-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+  text-align: center;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.chat-empty-icon {
+  font-size: 3.5rem;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 0 20px hsla(245, 80%, 65%, 0.6));
+  animation: icon-float 3s ease infinite alternate;
+}
+
+@keyframes icon-float {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-8px); }
+}
+
+.chat-empty-title {
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  letter-spacing: -0.03em;
+}
+
+.chat-empty-sub {
+  color: var(--clr-text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+.chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.chat-suggestion-chip {
+  padding: 8px 16px;
+  background: hsla(230, 20%, 16%, 0.7);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-full);
+  font-size: 0.83rem;
+  color: var(--clr-text-secondary);
+  cursor: default;
+  transition: all var(--transition-normal);
+}
+
+.chat-suggestion-chip:hover {
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+  background: hsla(245, 80%, 60%, 0.08);
+}
+
+/* ---- Message rows ---------------------------------------- */
+.message-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  max-width: 840px;
+}
+
+.message-row--user {
+  flex-direction: row-reverse;
+  margin-left: auto;
+}
+
+.message-row--assistant {
+  margin-right: auto;
+}
+
+/* ---- Avatars --------------------------------------------- */
+.message-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.message-avatar--assistant {
+  background: linear-gradient(135deg, hsl(245, 80%, 40%), hsl(260, 70%, 35%));
+  box-shadow: 0 0 14px hsla(245, 80%, 60%, 0.3);
+}
+
+.message-avatar--user {
+  background: hsla(220, 15%, 22%, 0.8);
+  border: 1px solid var(--clr-border);
+}
+
+/* ---- Content container ----------------------------------- */
+.message-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.message-row--user .message-content {
+  align-items: flex-end;
+}
+
+/* ---- Status chips row ------------------------------------ */
+.message-status-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+/* ---- Bubbles --------------------------------------------- */
+.message-bubble {
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  max-width: 100%;
+  word-break: break-word;
+  line-height: 1.65;
+  font-size: 0.93rem;
+  position: relative;
+}
+
+.bubble--user {
+  background: linear-gradient(135deg, hsl(245, 75%, 50%), hsl(260, 65%, 45%));
+  color: #fff;
+  border-bottom-right-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px hsla(245, 80%, 40%, 0.35);
+}
+
+.bubble--assistant {
+  background: hsla(230, 20%, 15%, 0.75);
+  border: 1px solid var(--clr-border);
+  color: var(--clr-text-primary);
+  border-bottom-left-radius: var(--radius-sm);
+  backdrop-filter: blur(10px);
+}
+
+.message-text strong { font-weight: 600; }
+.message-text code {
+  background: hsla(230, 25%, 10%, 0.8);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  color: var(--clr-accent);
+}
+
+/* ---- Streaming cursor ------------------------------------ */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.stream-cursor {
+  display: inline-block;
+  width: 2px; height: 1em;
+  background: var(--clr-primary);
+  margin-left: 2px;
+  vertical-align: middle;
+  border-radius: 1px;
+  animation: cursor-blink 0.9s ease infinite;
+}
+
+/* ---- Meta (badge, sources, sql) -------------------------- */
+.message-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.message-sources {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sources-label {
+  font-size: 0.75rem;
+  color: var(--clr-text-muted);
+}
+
+.source-chip {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  background: hsla(210, 70%, 30%, 0.2);
+  border: 1px solid hsla(210, 70%, 50%, 0.25);
+  border-radius: var(--radius-full);
+  color: hsl(210, 80%, 70%);
+}
+
+.sql-details {
+  font-size: 0.82rem;
+  color: var(--clr-text-muted);
+}
+
+.sql-details summary {
+  cursor: pointer;
+  color: var(--clr-accent);
+  user-select: none;
+}
+
+.sql-details pre {
+  margin-top: 8px;
+  font-size: 0.8rem;
+}

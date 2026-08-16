@@ -1,0 +1,109 @@
+/* ---- Root layout ----------------------------------------- */
+.copilot-root {
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ---- Header ---------------------------------------------- */
+.copilot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 0;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: 1px solid var(--clr-border);
+  position: relative;
+  z-index: 10;
+}
+
+.copilot-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.copilot-logo-icon {
+  font-size: 1.5rem;
+  filter: drop-shadow(0 0 10px hsla(245,80%,65%,0.7));
+}
+
+.copilot-logo-text {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  display: block;
+  line-height: 1.2;
+}
+
+.copilot-logo-sub {
+  font-size: 0.7rem;
+  color: var(--clr-text-muted);
+  display: block;
+  line-height: 1;
+}
+
+.copilot-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.copilot-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 10px;
+  border-right: 1px solid var(--clr-border);
+}
+
+.copilot-user-name {
+  font-size: 0.88rem;
+  color: var(--clr-text-secondary);
+  font-weight: 500;
+}
+
+.copilot-sidebar-toggle {
+  font-size: 0.78rem;
+  gap: 5px;
+}
+
+.copilot-logout {
+  font-size: 0.83rem;
+  color: var(--clr-text-muted);
+}
+.copilot-logout:hover { color: var(--clr-danger); }
+
+/* ---- Body ------------------------------------------------ */
+.copilot-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ---- Main chat column ------------------------------------ */
+.copilot-chat-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ---- Responsive ------------------------------------------ */
+@media (max-width: 900px) {
+  .copilot-sidebar-toggle { display: none; }
+  .copilot-user-name { display: none; }
+}
+
+@media (max-width: 600px) {
+  .copilot-header { padding: 0 12px; }
+  .copilot-user   { display: none; }
+}
