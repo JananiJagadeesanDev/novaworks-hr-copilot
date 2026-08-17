@@ -3,7 +3,7 @@ Seed script — run once from the backend/ directory:
     python seed.py
 Idempotent: skips if employees already exist.
 """
-from datetime import date
+from datetime import date, datetime
 
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
@@ -30,8 +30,23 @@ def hash_password(plain: str) -> str:
     return pwd_context.hash(plain)
 
 
-def seed(db: Session) -> None:
-    if db.query(Employee).count() > 0:
+def seed(db: Session, force: bool = False) -> None:
+    if force:
+        db.query(AIAuditLog).delete()
+        db.query(OnboardingTask).delete()
+        db.query(JobHistory).delete()
+        db.query(Announcement).delete()
+        db.query(Ticket).delete()
+        db.query(EmployeeProject).delete()
+        db.query(Project).delete()
+        db.query(EmployeeSkill).delete()
+        db.query(Skill).delete()
+        db.query(LeaveBalance).delete()
+        db.query(HRPolicy).delete()
+        db.query(Employee).delete()
+        db.query(Department).delete()
+        db.commit()
+    elif db.query(Employee).count() > 0:
         print("Database already seeded — skipping.")
         return
 
@@ -283,8 +298,18 @@ def seed(db: Session) -> None:
     # ------------------------------------------------------------------
     # Leave Balances (current year)
     # ------------------------------------------------------------------
-    current_year = 2025
+    current_year = datetime.now().year  # always seed for the actual current year
     leave_seeds = [
+        # Admin (EMP001 — Nova Admin)
+        (admin.id, LeaveType.ANNUAL, 18.0, 2.0),
+        (admin.id, LeaveType.SICK, 10.0, 1.0),
+        # HR Manager (Priya — EMP002)
+        (hr_manager.id, LeaveType.ANNUAL, 18.0, 4.0),
+        (hr_manager.id, LeaveType.SICK, 10.0, 2.0),
+        # Eng Manager (Arjun — EMP003)
+        (eng_manager.id, LeaveType.ANNUAL, 18.0, 6.0),
+        (eng_manager.id, LeaveType.SICK, 10.0, 0.0),
+        # Employees
         (emp_raj.id, LeaveType.ANNUAL, 18.0, 3.0),
         (emp_raj.id, LeaveType.SICK, 10.0, 1.0),
         (emp_sara.id, LeaveType.ANNUAL, 18.0, 5.0),
@@ -293,8 +318,6 @@ def seed(db: Session) -> None:
         (emp_anil.id, LeaveType.SICK, 10.0, 2.0),
         (emp_meena.id, LeaveType.ANNUAL, 18.0, 0.0),
         (emp_meena.id, LeaveType.SICK, 10.0, 0.0),
-        (hr_manager.id, LeaveType.ANNUAL, 18.0, 4.0),
-        (eng_manager.id, LeaveType.ANNUAL, 18.0, 6.0),
     ]
     for emp_id, ltype, total, used in leave_seeds:
         db.add(LeaveBalance(employee_id=emp_id, leave_type=ltype, total_days=total, used_days=used, year=current_year))
@@ -519,9 +542,10 @@ def seed(db: Session) -> None:
 
 
 if __name__ == "__main__":
+    import sys
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
-        seed(db)
+        seed(db, force="--force" in sys.argv)
     finally:
         db.close()

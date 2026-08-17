@@ -19,7 +19,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 from app.core.config import settings
 from app.models.employee import Employee
-from app.services.ai import api_tools
+from app.services.ai import api_tools, hitl
 from app.services.ai.permissions import check_action_permission
 
 logger = logging.getLogger(__name__)
@@ -75,12 +75,12 @@ Available Actions & Required Parameters:
    - message: explanation of why no tool can be called or request more details.
 """
 
-INTENT_EXTRACTION_PROMPT = f"""You are the NovaWorks HR Action Intent Extractor.
+INTENT_EXTRACTION_PROMPT = """You are the NovaWorks HR Action Intent Extractor.
 Analyze the user's message and determine the intended HR action and structured arguments.
 
-Today's Date: {{today_date}}
+Today's Date: {today_date}
 
-{AVAILABLE_TOOLS_DOC}
+{available_tools_doc}
 
 Output Format:
 You MUST output ONLY a JSON object with this exact structure:
@@ -92,7 +92,7 @@ You MUST output ONLY a JSON object with this exact structure:
 ```
 
 Rules:
-1. Always parse dates relative to today's date ({{today_date}}).
+1. Always parse dates relative to today's date ({today_date}).
 2. Infer sensible defaults if not specified (e.g., leave_type="ANNUAL" or "SICK" based on context, priority="MEDIUM").
 3. If essential information is missing, output action="none" and explain what is missing.
 4. Output ONLY the JSON block, no conversational text.
@@ -118,18 +118,10 @@ class ActionAgentService:
             temperature=0.0,
         )
 
-        if self._llm is None:
-            self._llm = ChatGoogleGenerativeAI(
-                model=settings.LLM_MODEL,
-                google_api_key=settings.GOOGLE_API_KEY,
-                temperature=0.1,
-            )
-        return self._llm
-
     async def extract_intent(self, message: str, current_user: Employee) -> dict[str, Any]:
         """Uses LLM to classify user intent and extract tool parameters."""
         today_str = date.today().isoformat()
-        prompt_content = INTENT_EXTRACTION_PROMPT.format(today_date=today_str)
+        prompt_content = INTENT_EXTRACTION_PROMPT.format(today_date=today_str, available_tools_doc=AVAILABLE_TOOLS_DOC)
         user_context = f"Current User ID: {current_user.id}, Role: {current_user.role.value}, Email: {current_user.email}\nUser Message: {message}"
 
         llm = self._get_llm()
@@ -139,7 +131,7 @@ class ActionAgentService:
         ]
 
         try:
-            response = await asyncio.to_thread(llm.invoke, messages)
+            response = await llm.ainvoke(messages)
             text = response.content.strip()
             match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
             raw_json = match.group(1) if match else text
@@ -220,7 +212,7 @@ class ActionAgentService:
             SystemMessage(content=SYNTHESIS_PROMPT),
             HumanMessage(content=prompt),
         ]
-        response = await asyncio.to_thread(llm.invoke, messages)
+        response = await llm.ainvoke(messages)
         return response.content.strip()
 
     async def run(

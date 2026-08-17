@@ -11,6 +11,7 @@ Endpoints:
 import logging
 from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -241,7 +242,7 @@ async def chat_actions(
     payload: ActionChatRequest,
     current_user: Employee = Depends(get_current_user),
     db: Session = Depends(get_db),
-    credentials: str = Depends(bearer_scheme),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ):
     """Perform HR tasks using natural language via guarded, tool-calling LLM."""
     message = payload.message.strip()
@@ -314,7 +315,7 @@ async def chat_router(
     payload: MainChatRequest,
     current_user: Employee = Depends(get_current_user),
     db: Session = Depends(get_db),
-    credentials: str = Depends(bearer_scheme),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ):
     """Main entry point for the AI copilot. Classifies intent and routes to the correct agent."""
     message = payload.message.strip()
@@ -365,7 +366,7 @@ async def chat_stream(
     payload: MainChatRequest,
     current_user: Employee = Depends(get_current_user),
     db: Session = Depends(get_db),
-    credentials: str = Depends(bearer_scheme),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ):
     """Stream AI interaction stages and response tokens using Server-Sent Events (SSE)."""
     message = payload.message.strip()
@@ -378,16 +379,17 @@ async def chat_stream(
 
         # Event 1: Intent Classification Stage
         yield f"event: status\ndata: {json.dumps({'stage': 'intent_classification', 'message': 'Classifying query intent...'})}\n\n"
-        await asyncio.sleep(0.2)
 
         agent_name = await router_agent_service.classify(message)
         yield f"event: status\ndata: {json.dumps({'stage': 'routing', 'agent': agent_name, 'message': f'Routed to {agent_name}'})}\n\n"
-        await asyncio.sleep(0.2)
 
         # Event 2: Execution Stage
         yield f"event: status\ndata: {json.dumps({'stage': 'execution', 'message': 'Processing agent logic & guardrails...'})}\n\n"
 
+        import time
+        start_time = time.perf_counter()
         access_token = credentials.credentials
+
         if agent_name == "policy_rag":
             response_data = await policy_rag_service.ask(question=message, db=db)
         elif agent_name == "sql_agent":
@@ -395,17 +397,63 @@ async def chat_stream(
         elif agent_name == "action_agent":
             response_data = await action_agent_service.run(message=message, current_user=current_user, access_token=access_token)
         else:
-            response_data = {"answer": "I'm sorry, I'm not sure how to handle that request."}
+            msg_l = message.lower()
+            if any(w in msg_l for w in ["hi", "hello", "hey", "morning", "afternoon"]):
+                greeting = f"Hello {current_user.first_name}! How can I help you today? You can ask me about HR policies, check your leave balances, or request HR actions."
+            elif any(w in msg_l for w in ["thank", "thanks"]):
+                greeting = "You're very welcome! Let me know if you need help with anything else."
+            else:
+                greeting = "I'm here to help! You can ask me about HR policies, employee & leave data, or request HR actions like applying for leave."
+            response_data = {"answer": greeting}
 
-        # Event 3: Token Streaming / Text Delta
+        latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
         answer = response_data.get("answer", "")
-        chunk_size = 30
+
+        # Compute token estimates and cost metrics (LangSmith / OpenTelemetry compatible)
+        in_tokens = max(1, len(message) // 4)
+        out_tokens = max(1, len(answer) // 4)
+        total_tokens = in_tokens + out_tokens
+        cost_usd = round((total_tokens / 1000) * 0.0001, 6)
+
+        # Log AI Audit Log with rich metrics
+        agent_type_map = {
+            "policy_rag": AgentType.POLICY_RAG,
+            "sql_agent": AgentType.SQL_AGENT,
+            "action_agent": AgentType.HR_ACTION,
+            "none": AgentType.ROUTER,
+        }
+        agent_type = agent_type_map.get(agent_name, AgentType.ROUTER)
+
+        audit_meta = {
+            **response_data,
+            "latency_ms": latency_ms,
+            "tokens": total_tokens,
+            "in_tokens": in_tokens,
+            "out_tokens": out_tokens,
+            "cost_usd": f"${cost_usd:.6f}",
+        }
+
+        try:
+            audit_service.log_interaction(
+                db=db,
+                employee_id=current_user.id,
+                agent_type=agent_type,
+                query=message,
+                response=answer,
+                action_taken=response_data.get("action_taken") or (agent_name.upper() if agent_name != "none" else "GREETING"),
+                metadata=audit_meta,
+            )
+        except Exception as audit_err:
+            logger.warning("Audit logging failed in stream: %s", audit_err)
+
+        # Event 3: Token Streaming / Text Delta (smooth and fast)
+        chunk_size = 40
         for i in range(0, len(answer), chunk_size):
             chunk = answer[i:i + chunk_size]
             yield f"event: delta\ndata: {json.dumps({'content': chunk})}\n\n"
-            await asyncio.sleep(0.05)
+            await asyncio.sleep(0.01)
 
         # Event 4: Completion Event
-        yield f"event: done\ndata: {json.dumps({'agent': agent_name, 'success': True, 'data': response_data})}\n\n"
+        yield f"event: done\ndata: {json.dumps({'agent': agent_name, 'success': True, 'data': response_data, 'metrics': {'latency_ms': latency_ms, 'tokens': total_tokens, 'cost': f'${cost_usd:.6f}'}})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

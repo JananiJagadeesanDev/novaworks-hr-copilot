@@ -130,3 +130,24 @@ def enforce_row_limit(sql: str, max_limit: int = 50) -> str:
         return cleaned
     else:
         return f"{cleaned} LIMIT {max_limit}"
+
+
+def validate_row_level_security(sql: str, user_id: int, user_role: str) -> tuple[bool, Optional[str]]:
+    """Enforce that EMPLOYEE role queries on private tables strictly scope to their own user_id.
+
+    This ensures complete scalability across any number of employees without hardcoded names.
+    """
+    if user_role.upper() != "EMPLOYEE":
+        return True, None
+
+    sql_lower = clean_sql(sql).lower()
+    private_tables = ["leave_balances", "leave_requests", "onboarding_tasks"]
+    touches_private_table = any(t in sql_lower for t in private_tables)
+
+    if touches_private_table:
+        # Require that the query filters by the current user's ID
+        uid_filter_pattern = rf"\b(employee_id|e\.id|employees\.id|lb\.employee_id|lr\.employee_id)\s*=\s*{user_id}\b"
+        if not re.search(uid_filter_pattern, sql_lower):
+            return False, "Access denied: As an employee, you can only view your own personal records."
+
+    return True, None

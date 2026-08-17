@@ -17,6 +17,8 @@ Usage:
 import asyncio
 import os
 import sys
+from datetime import datetime
+from sqlalchemy import text
 
 # Ensure backend directory is in sys.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -76,7 +78,8 @@ async def run_tests():
 
         # 2. Employee Action: Apply Sick Leave
         print_step("[2/6] Testing Employee Action: Apply Sick Leave")
-        msg_leave = "Apply sick leave from 2025-09-10 to 2025-09-11 because of dental surgery."
+        curr_yr = datetime.now().year
+        msg_leave = f"Apply sick leave from {curr_yr}-09-10 to {curr_yr}-09-11 because of dental surgery."
         print(f"User Request (Raj Kumar): '{msg_leave}'")
         res_leave = await action_agent_service.run(msg_leave, emp_raj, raj_token)
         print(f"Action Taken: {res_leave['action_taken']}")
@@ -117,7 +120,7 @@ async def run_tests():
         print_step("[5/6] Testing Manager Action: Approve Leave Request")
         msg_approve = f"Approve leave request {leave_id} with note: Dental leave approved. Take care."
         print(f"User Request (Priya Sharma, Manager): '{msg_approve}'")
-        res_approve = await action_agent_service.run(msg_approve, mgr_priya, priya_token)
+        res_approve = await action_agent_service.run(msg_approve, mgr_priya, priya_token, confirm=True)
         print(f"Action Taken: {res_approve['action_taken']}")
         print(f"Tool Result:  {res_approve['tool_result']}")
         print(f"Synthesized Answer:\n{res_approve['answer']}\n")
@@ -129,9 +132,12 @@ async def run_tests():
 
         # 6. Manager Action: Assign Employee to Project
         print_step("[6/6] Testing Manager Action: Assign Employee to Project")
-        msg_proj = f"Assign employee {emp_sara.id} to project 2 as Senior Frontend Lead."
+        # Ensure clean state for test employee 6 (Deepa)
+        db.execute(text("DELETE FROM employee_projects WHERE employee_id = 6 AND project_id = 2"))
+        db.commit()
+        msg_proj = "Assign employee 6 to project 2 as QA Lead."
         print(f"User Request (Priya Sharma, Manager): '{msg_proj}'")
-        res_proj = await action_agent_service.run(msg_proj, mgr_priya, priya_token)
+        res_proj = await action_agent_service.run(msg_proj, mgr_priya, priya_token, confirm=True)
         print(f"Action Taken: {res_proj['action_taken']}")
         print(f"Tool Result:  {res_proj['tool_result']}")
         print(f"Synthesized Answer:\n{res_proj['answer']}\n")

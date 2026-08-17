@@ -3,9 +3,9 @@
  * stage: 'intent_classification' | 'routing' | 'execution'
  */
 const STAGE_META = {
-  intent_classification: { icon: '🧠', label: 'Classifying intent…' },
+  intent_classification: { icon: '✨', label: 'Understanding request…' },
   routing:               { icon: '🔀', label: 'Routing to agent…' },
-  execution:             { icon: '⚡', label: 'Processing…' },
+  execution:             { icon: '⚙️', label: 'Processing…' },
 }
 
 import './StatusChip.css'
@@ -17,9 +17,8 @@ export default function StatusChip({ stage, agent }) {
     : meta.label
 
   return (
-    <div className="status-chip">
-      <span className="status-chip-spinner" />
-      <span className="status-chip-icon">{meta.icon}</span>
+    <div className="status-chip fade-in">
+      <span className="status-chip-icon pulse-dot-alt">{meta.icon}</span>
       <span className="status-chip-label">{label}</span>
     </div>
   )

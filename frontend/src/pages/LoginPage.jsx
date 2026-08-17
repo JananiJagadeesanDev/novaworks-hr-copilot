@@ -54,26 +54,12 @@ export default function LoginPage() {
             <span className="login-logo-text">NovaWorks</span>
           </div>
           <h1 className="login-headline">
-            Your <span className="gradient-text">AI-Powered</span><br />
-            HR Copilot
+            NovaWorks<br />
+            <span className="gradient-text">PeopleOps Copilot</span>
           </h1>
-          <p className="login-sub">
-            Ask anything about HR policies, query org data, or trigger
-            HR workflows — all in plain language.
+          <p className="login-sub" style={{ fontSize: '1.2rem', marginTop: '1rem', opacity: 0.9 }}>
+            Your intelligent assistant for HR policies, data, and workflows.
           </p>
-          <div className="login-features">
-            {[
-              { icon: '📋', text: 'Policy RAG — instant policy answers' },
-              { icon: '🔍', text: 'SQL Agent — natural language HR queries' },
-              { icon: '⚙️', text: 'Action Agent — automated HR workflows' },
-              { icon: '🔒', text: 'Role-aware, audited, and secure' },
-            ].map((f, i) => (
-              <div key={i} className="login-feature-item">
-                <span>{f.icon}</span>
-                <span>{f.text}</span>
-              </div>
-            ))}
-          </div>
         </div>
         <div className="login-brand-glow" />
       </div>

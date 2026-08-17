@@ -170,7 +170,7 @@ export default function CopilotPage() {
       {/* ---- Header ---- */}
       <header className="copilot-header glass">
         <div className="copilot-header-left">
-          <span className="copilot-logo-icon">⚡</span>
+          <span className="copilot-logo-icon">✨</span>
           <div>
             <span className="copilot-logo-text">NovaWorks</span>
             <span className="copilot-logo-sub">PeopleOps Copilot</span>
@@ -210,7 +210,7 @@ export default function CopilotPage() {
       <div className="copilot-body">
         {/* Main chat column */}
         <main className="copilot-chat-column">
-          <ChatWindow messages={messages} />
+          <ChatWindow messages={messages} onSuggestionClick={sendMessage} />
           <ChatInput onSend={sendMessage} disabled={streaming} />
         </main>
 

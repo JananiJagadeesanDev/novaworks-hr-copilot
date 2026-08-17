@@ -210,7 +210,7 @@ async def run_evaluation():
         })
 
         # Sleep briefly to avoid Gemini 15 RPM rate limit
-        await asyncio.sleep(1.5)
+        await asyncio.sleep(4.0)
 
     db.close()
 

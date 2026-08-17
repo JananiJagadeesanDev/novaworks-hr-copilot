@@ -11,27 +11,27 @@
   --hue-primary: 245;
   --hue-accent:  210;
 
-  --clr-bg-deep:      hsl(230, 28%, 7%);
-  --clr-bg-surface:   hsl(230, 22%, 11%);
-  --clr-bg-elevated:  hsl(230, 20%, 15%);
-  --clr-bg-glass:     hsla(230, 20%, 18%, 0.65);
+  --clr-bg-deep:      hsl(210, 20%, 98%);
+  --clr-bg-surface:   hsl(0, 0%, 100%);
+  --clr-bg-elevated:  hsl(210, 16%, 94%);
+  --clr-bg-glass:     hsla(0, 0%, 100%, 0.85);
 
-  --clr-primary:      hsl(245, 80%, 65%);
-  --clr-primary-glow: hsl(245, 80%, 75%);
-  --clr-accent:       hsl(210, 100%, 60%);
-  --clr-accent-dim:   hsl(210, 60%, 40%);
+  --clr-primary:      hsl(220, 70%, 50%);
+  --clr-primary-glow: hsl(220, 70%, 60%);
+  --clr-accent:       hsl(200, 90%, 45%);
+  --clr-accent-dim:   hsl(200, 60%, 85%);
 
-  --clr-success:  hsl(150, 70%, 50%);
-  --clr-warning:  hsl(38,  90%, 56%);
-  --clr-danger:   hsl(355, 78%, 60%);
-  --clr-info:     hsl(200, 90%, 55%);
+  --clr-success:  hsl(150, 60%, 40%);
+  --clr-warning:  hsl(38,  90%, 45%);
+  --clr-danger:   hsl(355, 70%, 50%);
+  --clr-info:     hsl(200, 80%, 45%);
 
-  --clr-text-primary:   hsl(220, 15%, 92%);
-  --clr-text-secondary: hsl(220, 10%, 62%);
-  --clr-text-muted:     hsl(220, 8%, 45%);
+  --clr-text-primary:   hsl(220, 30%, 15%);
+  --clr-text-secondary: hsl(220, 15%, 40%);
+  --clr-text-muted:     hsl(220, 10%, 55%);
 
-  --clr-border:         hsla(220, 20%, 35%, 0.45);
-  --clr-border-bright:  hsla(245, 60%, 70%, 0.35);
+  --clr-border:         hsla(220, 20%, 85%, 0.8);
+  --clr-border-bright:  hsla(220, 30%, 75%, 0.6);
 
   /* Typography */
   --font-sans: 'Inter', system-ui, sans-serif;
@@ -56,11 +56,11 @@
   --radius-full: 9999px;
 
   /* Shadows */
-  --shadow-sm:  0 1px 3px hsla(0,0%,0%,0.4);
-  --shadow-md:  0 4px 20px hsla(0,0%,0%,0.5);
-  --shadow-lg:  0 8px 40px hsla(0,0%,0%,0.6);
-  --shadow-glow-primary: 0 0 32px hsla(245, 80%, 65%, 0.25);
-  --shadow-glow-accent:  0 0 24px hsla(210, 100%, 60%, 0.2);
+  --shadow-sm:  0 1px 2px hsla(220, 20%, 20%, 0.05);
+  --shadow-md:  0 4px 12px hsla(220, 20%, 20%, 0.08);
+  --shadow-lg:  0 8px 30px hsla(220, 20%, 20%, 0.12);
+  --shadow-glow-primary: 0 0 20px hsla(220, 70%, 50%, 0.15);
+  --shadow-glow-accent:  0 0 16px hsla(200, 90%, 45%, 0.1);
 
   /* Transitions */
   --transition-fast:   150ms ease;
@@ -101,16 +101,16 @@ body {
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(ellipse 80% 50% at 20% 10%, hsla(245, 80%, 30%, 0.35) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 80%, hsla(210, 100%, 25%, 0.25) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 60% 20%, hsla(280, 70%, 30%, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 50% at 20% 10%, hsla(220, 70%, 90%, 0.5) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, hsla(200, 80%, 92%, 0.6) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 60% 20%, hsla(240, 60%, 95%, 0.4) 0%, transparent 50%),
     var(--clr-bg-deep);
   animation: bg-drift 20s ease infinite alternate;
 }
 
 @keyframes bg-drift {
   0%   { filter: hue-rotate(0deg); }
-  100% { filter: hue-rotate(15deg); }
+  100% { filter: hue-rotate(5deg); }
 }
 
 /* ---- Glass card ------------------------------------------ */
@@ -147,11 +147,12 @@ code, pre {
 }
 
 pre {
-  background: hsla(230, 25%, 8%, 0.9);
+  background: hsla(220, 10%, 95%, 0.8);
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-md);
   padding: var(--space-4);
   overflow-x: auto;
+  color: var(--clr-text-primary);
 }
 
 /* ---- Buttons --------------------------------------------- */
@@ -231,7 +232,7 @@ input, textarea {
   font-family: var(--font-sans);
   font-size: 0.95rem;
   color: var(--clr-text-primary);
-  background: hsla(230, 20%, 12%, 0.8);
+  background: hsla(0, 0%, 100%, 0.7);
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-md);
   padding: 11px 14px;
@@ -244,8 +245,8 @@ input::placeholder, textarea::placeholder {
 }
 input:focus, textarea:focus {
   border-color: var(--clr-primary);
-  box-shadow: 0 0 0 3px hsla(245, 80%, 65%, 0.15);
-  background: hsla(230, 20%, 14%, 0.9);
+  box-shadow: 0 0 0 3px hsla(220, 70%, 50%, 0.15);
+  background: hsla(0, 0%, 100%, 0.95);
 }
 
 /* ---- Scrollbar ------------------------------------------- */
@@ -286,6 +287,16 @@ input:focus, textarea:focus {
   border-radius: 50%;
   background: var(--clr-success);
   animation: pulse-dot 1.8s ease infinite;
+  display: inline-block;
+}
+
+/* ---- Subtle icon pulse ----------------------------------- */
+@keyframes subtle-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.6; transform: scale(0.95); }
+}
+.pulse-dot-alt {
+  animation: subtle-pulse 2s ease-in-out infinite;
   display: inline-block;
 }
 

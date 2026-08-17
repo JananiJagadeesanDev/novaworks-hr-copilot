@@ -1,6 +1,4 @@
 import { useEffect, useRef } from 'react'
-import AgentBadge from './AgentBadge'
-import StatusChip from './StatusChip'
 import './ChatWindow.css'
 
 /**
@@ -11,7 +9,7 @@ import './ChatWindow.css'
  *   text, agent?, statusStages?, isStreaming?
  * }
  */
-export default function ChatWindow({ messages }) {
+export default function ChatWindow({ messages, onSuggestionClick }) {
   const bottomRef = useRef(null)
 
   useEffect(() => {
@@ -19,7 +17,7 @@ export default function ChatWindow({ messages }) {
   }, [messages])
 
   if (messages.length === 0) {
-    return <EmptyState />
+    return <EmptyState onSuggestionClick={onSuggestionClick} />
   }
 
   return (
@@ -32,97 +30,192 @@ export default function ChatWindow({ messages }) {
   )
 }
 
-function EmptyState() {
+function EmptyState({ onSuggestionClick }) {
   const suggestions = [
-    'What is the maternity leave policy?',
-    'How many employees are in Engineering?',
-    'Approve Raj Kumar\'s leave request',
-    'What is our WFH policy?',
+    { icon: '📋', category: 'Policy', text: 'What is the maternity leave policy?' },
+    { icon: '👥', category: 'People', text: 'Who is assigned to HR Policy Copilot?' },
+    { icon: '📅', category: 'Leave', text: 'What is my leave balance?' },
+    { icon: '⚡', category: 'Action', text: 'Apply for sick leave for tomorrow' },
   ]
+
   return (
     <div className="chat-empty fade-in">
-      <div className="chat-empty-icon">⚡</div>
+      <div className="glean-hero-badge">
+        <span className="glean-hero-sparkle">✨</span>
+        <span>PeopleOps Assistant</span>
+      </div>
       <h2 className="chat-empty-title">
-        How can I help you today?
+        Search policies, people & HR actions
       </h2>
       <p className="chat-empty-sub">
-        Ask about HR policies, query data, or request an HR action.
-        I'll route your request to the right agent automatically.
+        Ask anything across company policies, project allocations, leave records, or automate HR tasks.
       </p>
-      <div className="chat-suggestions">
+      <div className="chat-suggestions-grid">
         {suggestions.map((s, i) => (
-          <div key={i} className="chat-suggestion-chip">{s}</div>
+          <button 
+            key={i} 
+            className="chat-suggestion-card"
+            onClick={() => onSuggestionClick && onSuggestionClick(s.text)}
+          >
+            <div className="suggestion-card-header">
+              <span className="suggestion-icon">{s.icon}</span>
+              <span className="suggestion-category">{s.category}</span>
+            </div>
+            <span className="suggestion-text">{s.text}</span>
+          </button>
         ))}
       </div>
     </div>
   )
 }
 
+function getSourceInfo(msg) {
+  if (msg.agent === 'sql_agent') {
+    return {
+      label: 'Projects & Employee Database',
+      icon: '🗂️',
+      steps: [
+        'Understood question & intent',
+        'Selected Projects & Employee database source',
+        'Generated safe read-only SQL query',
+        'Enforced role-based access control & row limits',
+      ]
+    }
+  }
+  if (msg.agent === 'policy_rag') {
+    const sourceTitle = msg.sources?.[0]?.title || 'HR Policies'
+    return {
+      label: `HR Policies (${sourceTitle})`,
+      icon: '📋',
+      steps: [
+        'Understood question & intent',
+        'Retrieved verified policy chunks from Qdrant vector store',
+        'Grounded response strictly on official company policies',
+        'Verified answer accuracy and source citations',
+      ]
+    }
+  }
+  if (msg.agent === 'action_agent') {
+    return {
+      label: 'HR Operations REST API',
+      icon: '⚙️',
+      steps: [
+        'Understood action intent & extracted parameters',
+        'Validated caller permissions matrix',
+        'Dispatched mutation via backend REST API tool',
+        'Synthesized action confirmation',
+      ]
+    }
+  }
+  return {
+    label: 'PeopleOps Knowledge Assistant',
+    icon: '✨',
+    steps: [
+      'Understood question',
+      'Routed through security guardrails',
+      'Synthesized direct response',
+    ]
+  }
+}
+
 function MessageBubble({ msg }) {
   const isUser = msg.role === 'user'
 
-  return (
-    <div className={`message-row ${isUser ? 'message-row--user' : 'message-row--assistant'} fade-in`}>
-      {!isUser && (
-        <div className="message-avatar message-avatar--assistant" aria-hidden="true">
-          ⚡
-        </div>
-      )}
-
-      <div className="message-content">
-        {/* SSE status chips */}
-        {msg.statusStages && msg.statusStages.length > 0 && (
-          <div className="message-status-chips">
-            {msg.statusStages.map((s, i) => (
-              <StatusChip key={i} stage={s.stage} agent={s.agent} />
-            ))}
-          </div>
-        )}
-
-        <div className={`message-bubble ${isUser ? 'bubble--user' : 'bubble--assistant'}`}>
-          {msg.isStreaming && !msg.text ? (
-            <div className="typing-dots" aria-label="AI is thinking">
-              <span /><span /><span />
-            </div>
-          ) : (
+  if (isUser) {
+    return (
+      <div className="message-row message-row--user fade-in">
+        <div className="message-content">
+          <div className="message-bubble bubble--user">
             <div className="message-text">
               {renderMessageText(msg.text)}
             </div>
-          )}
-
-          {/* Streaming cursor */}
-          {msg.isStreaming && msg.text && (
-            <span className="stream-cursor" aria-hidden="true" />
-          )}
-        </div>
-
-        {/* Agent badge + metadata */}
-        {!isUser && !msg.isStreaming && msg.agent && (
-          <div className="message-meta">
-            <AgentBadge agent={msg.agent} />
-            {msg.sqlQuery && (
-              <details className="sql-details">
-                <summary>View SQL</summary>
-                <pre><code>{msg.sqlQuery}</code></pre>
-              </details>
-            )}
-            {msg.sources && msg.sources.length > 0 && (
-              <div className="message-sources">
-                <span className="sources-label">Sources:</span>
-                {msg.sources.map((s, i) => (
-                  <span key={i} className="source-chip">{s.title}</span>
-                ))}
-              </div>
-            )}
           </div>
-        )}
-      </div>
-
-      {isUser && (
+        </div>
         <div className="message-avatar message-avatar--user" aria-hidden="true">
           👤
         </div>
-      )}
+      </div>
+    )
+  }
+
+  const sourceInfo = getSourceInfo(msg)
+
+  return (
+    <div className="message-row message-row--assistant fade-in">
+      <div className="glean-card">
+        {/* Glean Assistant Card Header */}
+        <div className="glean-card-header">
+          <span className="glean-header-icon">✨</span>
+          <span className="glean-header-title">PeopleOps Copilot</span>
+        </div>
+
+        {/* Streaming Live Thinking Stage */}
+        {msg.isStreaming && !msg.text && (
+          <div className="glean-streaming-status">
+            <span className="pulse-dot-alt">✨</span>
+            <span>
+              {msg.statusStages?.[msg.statusStages.length - 1]?.message || 'Searching enterprise data sources...'}
+            </span>
+          </div>
+        )}
+
+        {/* Main Answer Content */}
+        {msg.text && (
+          <div className="glean-card-content">
+            {renderMessageText(msg.text)}
+            {msg.isStreaming && <span className="stream-cursor" aria-hidden="true" />}
+          </div>
+        )}
+
+        {/* Source Footer */}
+        {!msg.isStreaming && msg.text && (
+          <div className="glean-source-footer">
+            <span className="glean-source-icon">{sourceInfo.icon}</span>
+            <span className="glean-source-text">
+              <span className="source-muted">Source:</span> {sourceInfo.label}
+            </span>
+          </div>
+        )}
+
+        {/* Expandable Reasoning: "Show how I found this" */}
+        {!msg.isStreaming && msg.text && (
+          <details className="glean-reasoning-details">
+            <summary className="glean-reasoning-summary">
+              <span className="glean-chevron">⌄</span> Show how I found this
+            </summary>
+            <div className="glean-reasoning-body">
+              <ul className="glean-reasoning-steps">
+                {sourceInfo.steps.map((step, idx) => (
+                  <li key={idx}>
+                    <span className="glean-check-icon">✓</span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {msg.sqlQuery && (
+                <details className="glean-sql-box">
+                  <summary className="glean-sql-summary">View SQL</summary>
+                  <pre className="glean-sql-pre"><code>{msg.sqlQuery}</code></pre>
+                </details>
+              )}
+
+              {msg.sources && msg.sources.length > 0 && (
+                <div className="glean-source-citations">
+                  <span className="citation-label">Referenced Policy Documents:</span>
+                  <div className="citation-chips">
+                    {msg.sources.map((s, idx) => (
+                      <span key={idx} className="citation-chip">
+                        📄 {s.title} ({s.category || 'Policy'})
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </details>
+        )}
+      </div>
     </div>
   )
 }

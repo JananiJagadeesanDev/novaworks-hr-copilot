@@ -1,0 +1,16 @@
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URL
+  build:
+    commands:
+      - echo Building frontend image...
+      - docker build -t novaworks-frontend ./frontend
+      - docker tag novaworks-frontend:latest $ECR_URL/novaworks-frontend:latest
+  post_build:
+    commands:
+      - echo Pushing frontend image...
+      - docker push $ECR_URL/novaworks-frontend:latest
+      - echo Frontend build complete.

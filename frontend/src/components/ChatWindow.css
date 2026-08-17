@@ -20,54 +20,95 @@
   margin: 0 auto;
 }
 
-.chat-empty-icon {
-  font-size: 3.5rem;
-  margin-bottom: 20px;
-  filter: drop-shadow(0 0 20px hsla(245, 80%, 65%, 0.6));
-  animation: icon-float 3s ease infinite alternate;
+.glean-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: hsla(220, 70%, 96%, 0.8);
+  border: 1px solid hsla(220, 70%, 85%, 0.9);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--clr-primary);
+  margin-bottom: 16px;
 }
 
-@keyframes icon-float {
-  from { transform: translateY(0); }
-  to   { transform: translateY(-8px); }
+.glean-hero-sparkle {
+  font-size: 1.1rem;
 }
 
 .chat-empty-title {
-  font-size: 1.7rem;
+  font-size: 1.85rem;
   font-weight: 700;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   letter-spacing: -0.03em;
+  color: var(--clr-text-primary);
 }
 
 .chat-empty-sub {
   color: var(--clr-text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.7;
-  margin-bottom: 28px;
+  font-size: 0.96rem;
+  line-height: 1.6;
+  margin-bottom: 32px;
+  max-width: 580px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.chat-suggestions {
+.chat-suggestions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.chat-suggestion-card {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-}
-
-.chat-suggestion-chip {
-  padding: 8px 16px;
-  background: hsla(230, 20%, 16%, 0.7);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px 16px;
+  background: #ffffff;
   border: 1px solid var(--clr-border);
-  border-radius: var(--radius-full);
-  font-size: 0.83rem;
-  color: var(--clr-text-secondary);
-  cursor: default;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-align: left;
   transition: all var(--transition-normal);
+  box-shadow: 0 1px 4px hsla(220, 20%, 20%, 0.03);
 }
 
-.chat-suggestion-chip:hover {
-  border-color: var(--clr-primary);
-  color: var(--clr-primary);
-  background: hsla(245, 80%, 60%, 0.08);
+.chat-suggestion-card:hover {
+  border-color: hsla(220, 70%, 50%, 0.5);
+  box-shadow: 0 4px 14px hsla(220, 70%, 40%, 0.08);
+  transform: translateY(-2px);
+}
+
+.suggestion-card-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.suggestion-icon {
+  font-size: 0.95rem;
+}
+
+.suggestion-category {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--clr-text-muted);
+}
+
+.suggestion-text {
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: var(--clr-text-primary);
+  line-height: 1.4;
 }
 
 /* ---- Message rows ---------------------------------------- */
@@ -142,27 +183,210 @@
 }
 
 .bubble--user {
-  background: linear-gradient(135deg, hsl(245, 75%, 50%), hsl(260, 65%, 45%));
+  background: var(--clr-primary);
   color: #fff;
   border-bottom-right-radius: var(--radius-sm);
-  box-shadow: 0 4px 16px hsla(245, 80%, 40%, 0.35);
+  box-shadow: 0 2px 8px hsla(220, 70%, 40%, 0.2);
 }
 
-.bubble--assistant {
-  background: hsla(230, 20%, 15%, 0.75);
+/* ---- Glean Assistant Card -------------------------------- */
+.glean-card {
+  width: 100%;
+  max-width: 800px;
+  background: hsla(0, 0%, 100%, 0.85);
   border: 1px solid var(--clr-border);
-  color: var(--clr-text-primary);
-  border-bottom-left-radius: var(--radius-sm);
-  backdrop-filter: blur(10px);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  box-shadow: 0 2px 12px hsla(220, 20%, 20%, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.message-text strong { font-weight: 600; }
-.message-text code {
-  background: hsla(230, 25%, 10%, 0.8);
-  padding: 1px 5px;
+.glean-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid hsla(220, 20%, 90%, 0.8);
+  padding-bottom: 10px;
+}
+
+.glean-header-icon {
+  font-size: 1.1rem;
+}
+
+.glean-header-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--clr-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.glean-streaming-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--clr-text-secondary);
+  font-size: 0.88rem;
+  padding: 8px 0;
+}
+
+.glean-card-content {
+  color: var(--clr-text-primary);
+  line-height: 1.7;
+  font-size: 0.94rem;
+}
+
+.glean-card-content strong {
+  font-weight: 600;
+  color: var(--clr-text-primary);
+}
+
+.glean-card-content code {
+  background: hsla(220, 20%, 94%, 0.9);
+  padding: 2px 6px;
   border-radius: 4px;
-  font-size: 0.85em;
-  color: var(--clr-accent);
+  font-size: 0.88em;
+  color: hsl(220, 70%, 40%);
+  border: 1px solid var(--clr-border);
+}
+
+/* ---- Source Footer --------------------------------------- */
+.glean-source-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--clr-text-secondary);
+  padding-top: 4px;
+}
+
+.glean-source-icon {
+  font-size: 0.95rem;
+}
+
+.source-muted {
+  color: var(--clr-text-muted);
+}
+
+/* ---- Expandable Reasoning: "Show how I found this" ------- */
+.glean-reasoning-details {
+  border-top: 1px dashed var(--clr-border);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+.glean-reasoning-summary {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color var(--transition-fast);
+}
+
+.glean-reasoning-summary:hover {
+  color: var(--clr-primary);
+}
+
+.glean-chevron {
+  font-size: 0.9rem;
+  transition: transform var(--transition-fast);
+}
+
+.glean-reasoning-details[open] .glean-chevron {
+  transform: rotate(180deg);
+}
+
+.glean-reasoning-body {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: hsla(220, 20%, 97%, 0.8);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.glean-reasoning-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.glean-reasoning-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--clr-text-secondary);
+}
+
+.glean-check-icon {
+  color: var(--clr-success);
+  font-weight: bold;
+  font-size: 0.88rem;
+}
+
+/* ---- SQL & Citations Box inside Reasoning ---------------- */
+.glean-sql-box {
+  margin-top: 6px;
+  font-size: 0.8rem;
+}
+
+.glean-sql-summary {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--clr-primary);
+  cursor: pointer;
+}
+
+.glean-sql-pre {
+  background: hsla(220, 20%, 93%, 0.9);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--clr-border);
+  overflow-x: auto;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.glean-source-citations {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.citation-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--clr-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.citation-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.citation-chip {
+  font-size: 0.76rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #fff;
+  border: 1px solid var(--clr-border);
+  color: var(--clr-text-secondary);
 }
 
 /* ---- Streaming cursor ------------------------------------ */
@@ -178,50 +402,4 @@
   vertical-align: middle;
   border-radius: 1px;
   animation: cursor-blink 0.9s ease infinite;
-}
-
-/* ---- Meta (badge, sources, sql) -------------------------- */
-.message-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 2px;
-}
-
-.message-sources {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.sources-label {
-  font-size: 0.75rem;
-  color: var(--clr-text-muted);
-}
-
-.source-chip {
-  font-size: 0.72rem;
-  padding: 2px 8px;
-  background: hsla(210, 70%, 30%, 0.2);
-  border: 1px solid hsla(210, 70%, 50%, 0.25);
-  border-radius: var(--radius-full);
-  color: hsl(210, 80%, 70%);
-}
-
-.sql-details {
-  font-size: 0.82rem;
-  color: var(--clr-text-muted);
-}
-
-.sql-details summary {
-  cursor: pointer;
-  color: var(--clr-accent);
-  user-select: none;
-}
-
-.sql-details pre {
-  margin-top: 8px;
-  font-size: 0.8rem;
 }

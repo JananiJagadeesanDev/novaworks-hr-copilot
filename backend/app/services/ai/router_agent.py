@@ -11,7 +11,7 @@ import asyncio
 import json
 import logging
 import re
-from typing import Literal
+from typing import Literal, Optional
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -69,8 +69,37 @@ class RouterAgentService:
     is as deterministic as possible.
     """
 
+    def _fast_path_classify(self, message: str) -> Optional[AgentName]:
+        """High-precision regex/keyword fast path to bypass LLM classification."""
+        msg = message.strip().lower()
+
+        # 1. Greetings & meta inquiries -> none (handled instantly)
+        if re.match(r"^(hi|hello|hey|greetings|good\s+(morning|afternoon|evening)|thanks|thank\s+you|bye|goodbye|what can you do|help)$", msg):
+            return "none"
+
+        # 2. Direct Actions (apply, book, request leave, approve/reject, create ticket)
+        if re.search(r"\b(apply|book|submit|request)\b.*\b(leave|time off|vacation|half[- ]day|wfh)\b", msg) or \
+           re.search(r"\b(approve|reject|cancel)\b.*\b(leave|request|ticket)\b", msg) or \
+           re.search(r"\b(create|raise|open|file)\b.*\b(ticket|issue|bug|announcement)\b", msg):
+            return "action_agent"
+
+        # 3. SQL data queries (assignments, projects, employees, skills, headcount, leave balances)
+        if re.search(r"\b(assigned to|assigned on|who is assigned|who works on|which projects|project assignments|my project|my projects)\b", msg) or \
+           re.search(r"\b(leave balance|remaining leave|leaves do i have|leaves left|my sick leave balance|my annual leave balance)\b", msg) or \
+           re.search(r"\b(which employees|who knows|list (all )?(employees|projects|departments|tickets)|headcount|count of employees)\b", msg):
+            return "sql_agent"
+
+        # 4. Policy questions (rules, policies, benefits, guidelines, entitlements)
+        if re.search(r"\b(policy|policies|handbook|guideline|guidelines|rules|maternity|paternity|bereavement|wfh|work from home|remote work|dress code|probation|notice period|reimbursement|insurance|perks|learning and dev|budget)\b", msg):
+            return "policy_rag"
+
+        return None
+
     def _heuristic_classify(self, message: str) -> AgentName:
         """Keyword-based fallback when the LLM router is unavailable."""
+        fast = self._fast_path_classify(message)
+        if fast is not None:
+            return fast
         msg_lower = message.lower()
         if any(k in msg_lower for k in ["policy", "sick leave", "work from home", "wfh", "late to work", "half-day", "rules", "guidelines"]):
             return "policy_rag"
@@ -100,6 +129,13 @@ class RouterAgentService:
 
     async def classify(self, message: str) -> AgentName:
         """Classifies the user message and returns the name of the appropriate agent."""
+        # 1. Check zero-latency fast-path first
+        fast_classified = self._fast_path_classify(message)
+        if fast_classified is not None:
+            logger.info("Fast-path classified message %r -> %s (0 LLM calls)", message, fast_classified)
+            return fast_classified
+
+        # 2. If ambiguous, fall back to LLM
         if not settings.GOOGLE_API_KEY:
             logger.error("GOOGLE_API_KEY is not configured; using heuristic routing fallback.")
             return self._heuristic_classify(message)
