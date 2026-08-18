@@ -197,6 +197,23 @@ def seed(db: Session, force: bool = False) -> None:
             ),
         ),
         HRPolicy(
+            title="Maternity Leave Policy",
+            category="leave",
+            content=(
+                "Female employees are entitled to 26 weeks (182 days) of fully paid maternity leave for up to two surviving children. "
+                "Maternity leave can be commenced up to 8 weeks prior to the expected date of delivery. "
+                "An additional 4 weeks of leave may be granted on medical grounds. "
+                "Employees can request flexible or remote work options for up to 3 months upon returning."
+            ),
+        ),
+        HRPolicy(
+            title="Paternity Leave Policy",
+            category="leave",
+            content=(
+                "Male employees are entitled to 2 weeks (10 working days) of fully paid paternity leave to be utilized within 6 months of childbirth or adoption."
+            ),
+        ),
+        HRPolicy(
             title="Remote Work Policy",
             category="remote_work",
             content=(
@@ -271,8 +288,8 @@ def seed(db: Session, force: bool = False) -> None:
     # Projects
     # ------------------------------------------------------------------
     proj_copilot = Project(
-        name="NovaWorks HR Copilot",
-        description="AI-powered HR assistant for employee self-service",
+        name="HR Policy Copilot",
+        description="AI-powered HR assistant for employee self-service and policy intelligence",
         start_date=date(2025, 1, 1),
         status=ProjectStatus.ACTIVE,
     )
