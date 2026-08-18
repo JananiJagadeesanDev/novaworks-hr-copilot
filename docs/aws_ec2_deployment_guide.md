@@ -210,28 +210,85 @@ http://<YOUR-EC2-PUBLIC-IP>
 
 ---
 
-## 🔄 Day-to-Day Maintenance & Updates
+## 🔄 Day-to-Day Maintenance & Operations
 
-### How to Pull Latest Code & Redeploy:
+### 1. How to Redeploy after a Code Push (GitHub $\rightarrow$ EC2)
+Whenever you push new code to your GitHub repo and want to update your live EC2 app:
+
 ```bash
 cd ~/novaworks-hr-copilot
+
+# 1. Pull the latest commits from GitHub
 git pull
+
+# 2. Rebuild the updated Docker images
 sudo docker build -t novaworks-hr-copilot-backend ./backend
 sudo docker build -t novaworks-hr-copilot-frontend ./frontend
+
+# 3. Recreate and start the containers with the new images
 sudo /usr/bin/docker-compose down
 sudo /usr/bin/docker-compose up -d
+
+# 4. (Optional) Prune old dangling Docker images to save EC2 disk space
+sudo docker image prune -f
 ```
 
-### How to View Live Server Logs:
+---
+
+### 2. Container Lifecycle Commands (Start, Stop, Restart)
+
+| Action | Command | Description |
+|---|---|---|
+| **Start Services** | `sudo /usr/bin/docker-compose up -d` | Creates & starts containers in the background. |
+| **Stop Services** | `sudo /usr/bin/docker-compose stop` | Pauses containers without removing them or networks. |
+| **Resume Services** | `sudo /usr/bin/docker-compose start` | Resumes stopped containers. |
+| **Shut Down Services** | `sudo /usr/bin/docker-compose down` | Stops and removes container instances & internal networks. |
+| **Restart Everything** | `sudo /usr/bin/docker-compose restart` | Restarts both frontend and backend. |
+| **Restart Backend Only** | `sudo /usr/bin/docker-compose restart backend` | Restarts only the FastAPI backend (e.g. after editing `.env`). |
+| **Restart Frontend Only** | `sudo /usr/bin/docker-compose restart frontend` | Restarts only the Nginx frontend. |
+
+---
+
+### 3. Monitoring & Debugging
+
+#### Check Container Status & Health:
 ```bash
-# View all logs
-sudo /usr/bin/docker-compose logs -f
-
-# View backend AI execution logs only
-sudo docker logs -f novaworks-backend
+sudo /usr/bin/docker-compose ps
 ```
 
-### How to Restart Services:
+#### Stream Live Logs in Real-Time:
 ```bash
-sudo /usr/bin/docker-compose restart
+# Stream logs for all services
+sudo /usr/bin/docker-compose logs -f --tail 50
+
+# Stream backend AI execution logs only
+sudo docker logs -f --tail 50 novaworks-backend
+
+# Stream frontend Nginx access/proxy logs only
+sudo docker logs -f --tail 50 novaworks-frontend
 ```
+
+#### Inspect Resource Usage (CPU & RAM):
+```bash
+sudo docker stats
+```
+
+---
+
+### 4. Database & Vector Index Management
+
+#### Run Database Reseed / Refresh:
+```bash
+sudo docker exec -it novaworks-backend python seed.py --force
+```
+
+#### Re-index HR Policies into Qdrant:
+```bash
+sudo docker exec -it novaworks-backend python ingest_policies.py
+```
+
+#### Open a Shell Inside the Backend Container:
+```bash
+sudo docker exec -it novaworks-backend /bin/bash
+```
+
