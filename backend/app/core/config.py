@@ -19,9 +19,11 @@ class Settings(BaseSettings):
     # RAG / Vector store settings
     EMBEDDING_MODEL: str = "models/gemini-embedding-2"
     LLM_MODEL: str = "gemini-1.5-flash-latest"
-    QDRANT_PATH: str = "./qdrant_data"
+    QDRANT_URL: str | None = None
+    QDRANT_API_KEY: str | None = None
+    QDRANT_PATH: str | None = "./qdrant_data"
     POLICY_COLLECTION: str = "hr_policies"
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
-settings = Settings()
+settings = Settings()

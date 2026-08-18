@@ -35,11 +35,18 @@ _qdrant_client: Optional[QdrantClient] = None
 
 
 def get_qdrant_client() -> QdrantClient:
-    """Return a process-level embedded QdrantClient (lazy-initialised)."""
+    """Return a process-level QdrantClient (Qdrant Cloud if URL is provided, else embedded disk)."""
     global _qdrant_client
     if _qdrant_client is None:
-        _qdrant_client = QdrantClient(path=settings.QDRANT_PATH)
-        logger.info("QdrantClient initialised (path=%s)", settings.QDRANT_PATH)
+        if settings.QDRANT_URL:
+            _qdrant_client = QdrantClient(
+                url=settings.QDRANT_URL,
+                api_key=settings.QDRANT_API_KEY,
+            )
+            logger.info("QdrantClient initialised (cloud/remote URL=%s)", settings.QDRANT_URL)
+        else:
+            _qdrant_client = QdrantClient(path=settings.QDRANT_PATH)
+            logger.info("QdrantClient initialised in embedded mode (path=%s)", settings.QDRANT_PATH)
     return _qdrant_client
 
 
