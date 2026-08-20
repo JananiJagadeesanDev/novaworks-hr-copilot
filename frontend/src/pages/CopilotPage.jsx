@@ -70,11 +70,11 @@ export default function CopilotPage() {
         const agent  = payload.agent || null
 
         // Check for HITL pending
-        if (data.action_taken === 'PENDING_CONFIRMATION' || data.requires_confirmation) {
+        if (data.action_taken === 'CONFIRMATION_REQUIRED' || data.tool_result?.requires_confirmation) {
           setHitl({
             message:        text,
-            pendingAction:  data.pending_description || data.answer || 'Confirm this action',
-            confirmationId: data.confirmation_id || null,
+            pendingAction:  data.answer || 'Confirm this action',
+            confirmationId: data.tool_result?.confirmation_id || null,
           })
         }
 
