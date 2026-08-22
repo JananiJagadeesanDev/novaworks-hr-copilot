@@ -1,5 +1,16 @@
 # NovaWorks PeopleOps Copilot 🚀
 
+####################
+#Deployed App's link
+####################
+
+http://3.25.129.3/ai-copilot
+
+## Loom's Link #####
+https://www.loom.com/share/e26ce7b2b2cc4d678ce9357622f5edd5
+
+
+
 > Enterprise-grade AI HR Assistant built with FastAPI, Vector RAG (Qdrant), SQL Agent Guardrails, and REST API Tool Calling.
 
 ---
